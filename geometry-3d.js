@@ -101,10 +101,10 @@ class Point3d {
          * Computes the affine combination of this with other.
          */
         let P = this;
-	const n = Math.min(len(scalars),len(others));
-        for (let i = 0; i < n; i++) {
-            P = P.plus(others[i].minus(this).times(scalars[i]));
-	}
+        const n = Math.min(len(scalars),len(others));
+            for (let i = 0; i < n; i++) {
+                P = P.plus(others[i].minus(this).times(scalars[i]));
+        }
         return P;
     }
 

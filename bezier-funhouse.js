@@ -31,7 +31,7 @@ function chooseColor(colorName) {
 //
 // Controls which type of mirror gets used.
 //
-let gCurved = 0; // Spherical mirror (1); curved funhouse mirror (0).
+let gCurved = 1; // Spherical mirror (1); curved funhouse mirror (0).
 
 function sphericalMirror(makeSpherical) {
     //

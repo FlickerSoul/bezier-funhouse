@@ -23,6 +23,7 @@ const MINIMUM_PLACEMENT_SCALE = 0.1; // Smallest sphere we can place.
 const MAX_SELECT_DISTANCE = 0.2;     // Distance to select a control point.
 const SMOOTHNESS = 500.0;            // How smooth is our curve approx?
 const EPSILON = 0.00000001;
+const CURVE_SMOOTHNESS = 1 / SMOOTHNESS;
 
 
 class Sphere {
@@ -149,15 +150,31 @@ class Curve {
             // Currently just returns the three control points, rather
             // than sampling points on the entire curve.
             //
-            this.points = [this.controlPoints[0],
-                           this.controlPoints[1],
-                           this.controlPoints[2]];
+            // this.points = [this.controlPoints[0],
+            //                this.controlPoints[1],
+            //                this.controlPoints[2]];
+
+            this.points = this.recursivelyCalCurve(...this.controlPoints)
+            console.log(this.points.length)
+
             this.compiled = true;
         }
     }
 
     recursivelyCalCurve(p1, p2, p3) {
+        const delta = p1.minus(p2).unit().dot(p2.minus(p3).unit())
+        if (delta > 0 && 1 - delta < CURVE_SMOOTHNESS) {
+            return [p1, p2, p3]
+        }
 
+        const lpt = p1.combo(1/2, p2)
+        const rpt = p2.combo(1/2, p3)
+        const cpt = lpt.combo(1/2, rpt)
+
+        let larr = this.recursivelyCalCurve(p1, lpt, cpt)
+        let rarr = this.recursivelyCalCurve(cpt, rpt, p3)
+
+        return larr.concat(rarr.slice(1))
     }
 
     update() {
