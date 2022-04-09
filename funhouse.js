@@ -143,20 +143,7 @@ class Curve {
         //
 
         if (!this.compiled) {
-            //
-            // COMPLETE THIS CODE!
-            //
-
-            // Currently just returns the three control points, rather
-            // than sampling points on the entire curve.
-            //
-            // this.points = [this.controlPoints[0],
-            //                this.controlPoints[1],
-            //                this.controlPoints[2]];
-
             this.points = this.recursivelyCalCurve(...this.controlPoints)
-            console.log(this.points.length)
-
             this.compiled = true;
         }
     }
