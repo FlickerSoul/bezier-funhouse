@@ -488,6 +488,7 @@ function draw() {
 function initTrace() {
     const vsId = "glsl/trace-vs.c";
     const fsId = "glsl/trace-fs.c";
+    // maybe change this to get more trace
     const vsSrc = document.getElementById(vsId).text;
     const fsSrc = document.getElementById(fsId).text;
     const prgm = loadShaderProgram(vsSrc, fsSrc);
