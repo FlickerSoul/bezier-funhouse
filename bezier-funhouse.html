@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>a Bézier funhouse</title</title>
+    <title>a Bézier funhouse</title>
 
     <script id="glsl/trace-vs.c" type="x-shader/x-vertex">
       //
@@ -420,7 +420,109 @@
           HITS_ANY  = HITS_ANY || rhs_hits;                                               \
     };
 
-          
+    #define MIRR_HEIGHT 1.5
+
+
+      float ifInRect(ISect intersectInfo, vec2 b1, vec2 b2) {
+        vec3 loc = vec3(intersectInfo.location);
+
+        if (loc.y > MIRR_HEIGHT + EPSILON || loc.y < 0.0) {
+          return -1.0;
+        }
+
+        vec2 loc2d = vec2(loc.x, loc.z);
+
+        vec2 bar = b1 - b2;
+        vec2 ref = loc2d - b2;
+
+        float len = dot(ref, normalize(bar));
+
+        if (len >= 0.0) {
+          float ratio = len / length(bar);
+          if (ratio < 1.0) {
+            return ratio;
+          }
+        }
+
+        return -1.0;
+      }
+
+      bool rayHitsBezierBeforeBase(vec4 R, vec4 d, vec2 cp0, vec2 cp1, vec2 cp2, float distance) {
+          vec3 cp0_3d = vec3(cp0.x, 0, cp0.y);
+          vec3 cp2_3d = vec3(cp2.x, 0, cp2.y);
+          vec3 cp1_3d_up = vec3(cp1.x, MIRR_HEIGHT, cp1.y);
+          vec3 cp1_3d = vec3(cp1.x, 0, cp1.y);
+          vec4 cp1_4d = vec4(cp1_3d, 1.0);
+          vec3 mid_vertical = cp1_3d_up - cp1_3d;
+
+          // get left mirror face normal
+          vec3 left_bottom = cp0_3d - cp1_3d;
+          vec4 left_face_normal = normalize(vec4(cross(left_bottom, mid_vertical), 0.0));
+          ISect leftISect = rayIntersectPlane(R, d, cp1_4d, left_face_normal);
+
+          // check if it's on the other side
+          if (leftISect.yes != 1) {
+            leftISect = rayIntersectPlane(R, d, cp1_4d, -left_face_normal);
+          }
+
+          // if intersect right, go further in approx
+          vec3 right_bottom = cp2_3d - cp1_3d;
+          vec4 right_face_normal = normalize(vec4(cross(mid_vertical, right_bottom), 0.0));
+          ISect rightISect = rayIntersectPlane(R, d, cp1_4d, right_face_normal);
+
+          if (rightISect.yes != 1) {
+            rightISect = rayIntersectPlane(R, d, cp1_4d, -right_face_normal);
+          }
+
+          return (leftISect.yes == 1 && distance > leftISect.distance && ifInRect(leftISect, cp0, cp1) > 0.0) ||
+                 (rightISect.yes == 1 && distance > rightISect.distance && ifInRect(rightISect, cp1, cp2) > 0.0);
+      }
+
+      bool rayHitsBezierBeforeRec1(vec4 R, vec4 d, vec2 cp0, vec2 cp1, vec2 cp2, float dis) {
+        vec2 lp = (cp0 + cp1) * 0.5;
+        vec2 rp = (cp1 + cp2) * 0.5;
+        vec2 mp = (lp + rp) * 0.5;
+
+        return rayHitsBezierBeforeBase(R, d, cp0, lp, mp, dis) ||
+               rayHitsBezierBeforeBase(R, d, mp, rp, cp2, dis);
+      }
+
+      bool rayHitsBezierBeforeRec2(vec4 R, vec4 d, vec2 cp0, vec2 cp1, vec2 cp2, float dis) {
+        vec2 lp = (cp0 + cp1) * 0.5;
+        vec2 rp = (cp1 + cp2) * 0.5;
+        vec2 mp = (lp + rp) * 0.5;
+
+        return rayHitsBezierBeforeRec1(R, d, cp0, lp, mp, dis) ||
+               rayHitsBezierBeforeRec1(R, d, mp, rp, cp2, dis);
+      }
+
+      bool rayHitsBezierBeforeRec3(vec4 R, vec4 d, vec2 cp0, vec2 cp1, vec2 cp2, float dis) {
+        vec2 lp = (cp0 + cp1) * 0.5;
+        vec2 rp = (cp1 + cp2) * 0.5;
+        vec2 mp = (lp + rp) * 0.5;
+
+        return rayHitsBezierBeforeRec2(R, d, cp0, lp, mp, dis) ||
+               rayHitsBezierBeforeRec2(R, d, mp, rp, cp2, dis);
+      }
+
+      bool rayHitsBezierBeforeRec4(vec4 R, vec4 d, vec2 cp0, vec2 cp1, vec2 cp2, float dis) {
+        vec2 lp = (cp0 + cp1) * 0.5;
+        vec2 rp = (cp1 + cp2) * 0.5;
+        vec2 mp = (lp + rp) * 0.5;
+
+        return rayHitsBezierBeforeRec3(R, d, cp0, lp, mp, dis) ||
+               rayHitsBezierBeforeRec3(R, d, mp, rp, cp2, dis);
+      }
+
+      bool rayHitsBezierBeforeRec5(vec4 R, vec4 d, vec2 cp0, vec2 cp1, vec2 cp2, float dis) {
+        vec2 lp = (cp0 + cp1) * 0.5;
+        vec2 rp = (cp1 + cp2) * 0.5;
+        vec2 mp = (lp + rp) * 0.5;
+
+        return rayHitsBezierBeforeRec4(R, d, cp0, lp, mp, dis) ||
+               rayHitsBezierBeforeRec4(R, d, mp, rp, cp2, dis);
+      }
+
       bool rayHitsBezierBefore(vec4 R, vec4 d, vec2 cp0, vec2 cp1, vec2 cp2, float distance) {
           //
           // This should return `true` if shooting a ray from point
@@ -435,11 +537,7 @@
           // This is used to see the mirror's shadow.
           //
 
-          // TODO CHANGE THIS CODE!
-
-          vec4 du = normalize(d);
-          
-          return false;  // No shadow.
+          return rayHitsBezierBeforeRec5(R, d, cp0, cp1, cp2, distance);
       }
           
       bool rayHitsMirrorBefore(vec4 R, vec4 d, float distance) {
@@ -473,7 +571,7 @@
       }
       
       vec3 computePhong(vec4 P, vec4 n, vec4 V, vec4 L,
-                        vec3 mColor, int mGlossy) {
+                        vec3 mColor, int mGlossy, bool ifHitsMirror) {
           //
           // Figures out Phong shading of an object at a surface point P with
           // normal n, and with respect to some light at point L, when viewed
@@ -505,6 +603,8 @@
           //
           float within = length(towardsLight);
           bool occluded = rayHitsSomeSphereBefore(P, towardsLight, within);
+          // TODO do something to incorporate this?
+          // occluded = occluded || ifHitsMirror;
           occluded = occluded || rayHitsMirrorBefore(P, towardsLight, within);
           if (occluded) {
               // The surface point is in shadow from the light.
@@ -640,31 +740,6 @@
           return isect;
       }
 
-      #define MIRR_HEIGHT 1.5
-
-      float ifInRect(ISect intersectInfo, vec2 b1, vec2 b2) {
-        vec3 loc = vec3(intersectInfo.location);
-
-        if (loc.y > MIRR_HEIGHT + EPSILON || loc.y < 0.0) {
-          return -1.0;
-        }
-
-        vec2 loc2d = vec2(loc.x, loc.z);
-
-        vec2 bar = b1 - b2;
-        vec2 ref = loc2d - b2;
-
-        float len = dot(ref, normalize(bar));
-
-        if (len >= 0.0) {
-          float ratio = len / length(bar);
-          if (ratio < 1.0) {
-            return ratio;
-          }
-        }
-
-        return -1.0;
-      }
 
       ISect intersectWhichBezierBase(vec4 R, vec4 d, vec2 cp0, vec2 cp1, vec2 cp2) {
           // convert 2d pt to 4d
@@ -684,6 +759,7 @@
           ISect leftISect = rayIntersectPlane(R, d, cp1_4d, left_face_normal);
 
           // check if it's on the other side
+          // TODO alternating slits
           if (leftISect.yes != 1) {
             leftISect = rayIntersectPlane(R, d, cp1_4d, -left_face_normal);
           }
@@ -717,7 +793,6 @@
             }
           }
 
-          // otherwise return non
           return bestISect(leftISect, rightISect);
       }
 
@@ -795,8 +870,6 @@
           //
 
           // ok so vec2 is x z coor, fill in x y z coor
-
-          // TODO CHANGE THIS CODE!
 
           // 5 eats too much performance but you need 5 layers to achieve smoothness
           return intersectWhichBezierRec5(R, d, cp0, cp1, cp2);
@@ -878,8 +951,9 @@
           // ray from hitting the mirror, instead send a secondary ray
           // due to reflection to see what object *it* hits.
           //
+          bool blocked = true;
           if (mirror.yes == 1) {
-              bool blocked = rayHitsSomeSphereBefore(mirror.location, -d, FAR);
+              blocked = rayHitsSomeSphereBefore(mirror.location, -d, FAR);
               if (!blocked) {
                   //
                   // Compute the reflected ray.
@@ -917,7 +991,7 @@
               color = computePhong(isect.location, isect.normal,
                                    source, lightPosition,
                                    isect.materialColor,
-                                   isect.materialGlossy);
+                                   isect.materialGlossy, (mirror.yes == 1 && !blocked));
           }
           return color;
       }
