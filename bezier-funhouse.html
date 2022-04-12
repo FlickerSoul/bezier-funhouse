@@ -671,7 +671,7 @@
         return ifInTri(loc, b1_3d, b2_3d, b1_3d_top) || ifInTri(loc, b1_3d_top, b2_3d_top, b2_3d);
       }
 
-      ISect intersectWhichBezier(vec4 R, vec4 d, vec2 cp0, vec2 cp1, vec2 cp2) {
+      ISect intersectWhichBezierBase(vec4 R, vec4 d, vec2 cp0, vec2 cp1, vec2 cp2) {
           // convert 2d pt to 4d
           vec4 cp0_3d = vec4(cp0.x, 0, cp0.y, 1.0);
           vec4 cp2_3d = vec4(cp2.x, 0, cp2.y, 1.0);
@@ -699,9 +699,8 @@
           // TODO object behind the mirror can be reflected
 
           if (leftISect.yes == 1) {
-            if (ifInRect(leftISect, cp0, cp1)) {
-              leftISect.panelLoc = 0;
-              return leftISect;
+            if (!ifInRect(leftISect, cp0, cp1)) {
+              leftISect = NO_INTERSECTION();
             }
           }
 
@@ -718,19 +717,69 @@
           }
 
           if (rightISect.yes == 1) {
-            if (ifInRect(rightISect, cp1, cp2)) {
-              rightISect.panelLoc = 1;
-              return rightISect;
+            if (!ifInRect(rightISect, cp1, cp2)) {
+              rightISect = NO_INTERSECTION();
             }
           }
 
           // otherwise return non
-          return NO_INTERSECTION();
+          return bestISect(leftISect, rightISect);
       }
 
+      ISect intersectWhichBezierRec1(vec4 R, vec4 d, vec2 cp0, vec2 cp1, vec2 cp2) {
+        vec2 lp = (cp0 + cp1) * 0.5;
+        vec2 rp = (cp1 + cp2) * 0.5;
+        vec2 mp = (lp + rp) * 0.5;
 
-      #define MIRROR_ITERATION 5
+        ISect left = intersectWhichBezierBase(R, d, cp0, lp, mp);
+        ISect right = intersectWhichBezierBase(R, d, mp, rp, cp2);
 
+        return bestISect(left, right);
+      }
+
+      ISect intersectWhichBezierRec2(vec4 R, vec4 d, vec2 cp0, vec2 cp1, vec2 cp2) {
+        vec2 lp = (cp0 + cp1) * 0.5;
+        vec2 rp = (cp1 + cp2) * 0.5;
+        vec2 mp = (lp + rp) * 0.5;
+
+        ISect left = intersectWhichBezierRec1(R, d, cp0, lp, mp);
+        ISect right = intersectWhichBezierRec1(R, d, mp, rp, cp2);
+
+        return bestISect(left, right);
+      }
+
+      ISect intersectWhichBezierRec3(vec4 R, vec4 d, vec2 cp0, vec2 cp1, vec2 cp2) {
+        vec2 lp = (cp0 + cp1) * 0.5;
+        vec2 rp = (cp1 + cp2) * 0.5;
+        vec2 mp = (lp + rp) * 0.5;
+
+        ISect left = intersectWhichBezierRec2(R, d, cp0, lp, mp);
+        ISect right = intersectWhichBezierRec2(R, d, mp, rp, cp2);
+
+        return bestISect(left, right);
+      }
+
+      ISect intersectWhichBezierRec4(vec4 R, vec4 d, vec2 cp0, vec2 cp1, vec2 cp2) {
+        vec2 lp = (cp0 + cp1) * 0.5;
+        vec2 rp = (cp1 + cp2) * 0.5;
+        vec2 mp = (lp + rp) * 0.5;
+
+        ISect left = intersectWhichBezierRec3(R, d, cp0, lp, mp);
+        ISect right = intersectWhichBezierRec3(R, d, mp, rp, cp2);
+
+        return bestISect(left, right);
+      }
+
+      ISect intersectWhichBezierRec5(vec4 R, vec4 d, vec2 cp0, vec2 cp1, vec2 cp2) {
+        vec2 lp = (cp0 + cp1) * 0.5;
+        vec2 rp = (cp1 + cp2) * 0.5;
+        vec2 mp = (lp + rp) * 0.5;
+
+        ISect left = intersectWhichBezierRec4(R, d, cp0, lp, mp);
+        ISect right = intersectWhichBezierRec4(R, d, mp, rp, cp2);
+
+        return bestISect(left, right);
+      }
 
       ISect rayIntersectBezier(vec4 R, vec4 d, vec2 cp0, vec2 cp1, vec2 cp2) {
           //
@@ -754,29 +803,7 @@
 
           // TODO CHANGE THIS CODE!
 
-          ISect intersect = intersectWhichBezier(R, d, cp0, cp1, cp2);
-
-          if (intersect.yes == 1) {
-            for (int i = 0; i < MIRROR_ITERATION; i++) {
-              intersect = intersectWhichBezier(R, d, cp0, cp1, cp2);
-
-              // something's wrong here
-              vec2 lp = (cp0 + cp1) * 0.5;
-              vec2 rp = (cp1 + cp2) * 0.5;
-              vec2 mp = (lp + rp) * 0.5;
-
-              // redirect
-              if (intersect.panelLoc == 0) {
-                cp1 = lp;
-                cp2 = mp;
-              } else {
-                cp0 = mp;
-                cp1 = rp;
-              }
-            }
-          }
-
-          return intersect;
+          return intersectWhichBezierRec4(R, d, cp0, cp1, cp2);
       }
           
       ISect rayIntersectMirror(vec4 R, vec4 d) {
