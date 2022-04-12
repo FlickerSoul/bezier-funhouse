@@ -688,12 +688,6 @@
             leftISect = rayIntersectPlane(R, d, cp1_4d, -left_face_normal);
           }
 
-          if (leftISect.yes == 1) {
-            if (ifInRect(leftISect, cp0, cp1) < 0.0) {
-              leftISect = NO_INTERSECTION();
-            }
-          }
-
           // if intersect right, go further in approx
           vec3 right_bottom = cp2_3d - cp1_3d;
           vec4 right_face_normal = normalize(vec4(cross(mid_vertical, right_bottom), 0.0));
@@ -703,9 +697,23 @@
             rightISect = rayIntersectPlane(R, d, cp1_4d, -right_face_normal);
           }
 
+          vec4 mid_normal = (leftISect.normal + rightISect.normal) * 0.5;
+
+          if (leftISect.yes == 1) {
+            float ratio = ifInRect(leftISect, cp0, cp1);
+            if (ratio < 0.0) {
+              leftISect = NO_INTERSECTION();
+            } else {
+              leftISect.normal = mid_normal * (1.0 - ratio) + left_face_normal * ratio;
+            }
+          }
+
           if (rightISect.yes == 1) {
-            if (ifInRect(rightISect, cp1, cp2) < 0.0) {
+            float ratio = ifInRect(rightISect, cp1, cp2);
+            if (ratio < 0.0) {
               rightISect = NO_INTERSECTION();
+            } else {
+              rightISect.normal = right_face_normal * (1.0 - ratio) + mid_normal * ratio;
             }
           }
 
@@ -757,6 +765,17 @@
         return bestISect(left, right);
       }
 
+      ISect intersectWhichBezierRec5(vec4 R, vec4 d, vec2 cp0, vec2 cp1, vec2 cp2) {
+        vec2 lp = (cp0 + cp1) * 0.5;
+        vec2 rp = (cp1 + cp2) * 0.5;
+        vec2 mp = (lp + rp) * 0.5;
+
+        ISect left = intersectWhichBezierRec4(R, d, cp0, lp, mp);
+        ISect right = intersectWhichBezierRec4(R, d, mp, rp, cp2);
+
+        return bestISect(left, right);
+      }
+
       ISect rayIntersectBezier(vec4 R, vec4 d, vec2 cp0, vec2 cp1, vec2 cp2) {
           //
           // This should return intersection information that results
@@ -779,8 +798,8 @@
 
           // TODO CHANGE THIS CODE!
 
-          // 5 eats too much performance
-          return intersectWhichBezierRec4(R, d, cp0, cp1, cp2);
+          // 5 eats too much performance but you need 5 layers to achieve smoothness
+          return intersectWhichBezierRec5(R, d, cp0, cp1, cp2);
       }
           
       ISect rayIntersectMirror(vec4 R, vec4 d) {
