@@ -571,7 +571,7 @@
       }
       
       vec3 computePhong(vec4 P, vec4 n, vec4 V, vec4 L,
-                        vec3 mColor, int mGlossy, bool ifHitsMirror) {
+                        vec3 mColor, int mGlossy) {
           //
           // Figures out Phong shading of an object at a surface point P with
           // normal n, and with respect to some light at point L, when viewed
@@ -604,8 +604,9 @@
           float within = length(towardsLight);
           bool occluded = rayHitsSomeSphereBefore(P, towardsLight, within);
           // TODO do something to incorporate this?
-          // occluded = occluded || ifHitsMirror;
+
           occluded = occluded || rayHitsMirrorBefore(P, towardsLight, within);
+
           if (occluded) {
               // The surface point is in shadow from the light.
               return ambient;
@@ -901,6 +902,8 @@
           
           return isect;
       }
+
+      #define EXTRA_BOUNCE 4
       
       vec3 trace(vec4 R, vec4 d) {
           //
@@ -937,14 +940,16 @@
           //
           // See if it hits the mirrored object...
           // 
-          ISect mirror = rayIntersectMirror(R,d);
+          vec4 source = R;
+          vec4 direction = d;
+
+          ISect mirror = NO_INTERSECTION();
+          ISect nextMirror = rayIntersectMirror(source, direction);
 
           //
           // If it does not hit the mirror, we see what object the
           // primary ray hits.
           //
-          vec4 source = R;
-          vec4 direction = d;
 
           //
           // If it does hit the mirror, and nothing is blocking that
@@ -952,16 +957,36 @@
           // due to reflection to see what object *it* hits.
           //
           bool blocked = true;
-          if (mirror.yes == 1) {
-              blocked = rayHitsSomeSphereBefore(mirror.location, -d, FAR);
+          if (nextMirror.yes == 1) {
+              blocked = rayHitsSomeSphereBefore(nextMirror.location, -direction, FAR);
               if (!blocked) {
                   //
                   // Compute the reflected ray.
                   //
+                  mirror = nextMirror;
+
                   source = mirror.location;
                   vec4 n = normalize(mirror.normal);
-                  direction = normalize(d - 2.0 * dot(d,n) * n);
+                  direction = normalize(direction - 2.0 * dot(direction, n) * n);
               }
+          }
+
+          for (int i = 0; i < EXTRA_BOUNCE; i++) {
+            nextMirror = rayIntersectMirror(source, direction);
+
+            if (nextMirror.yes == 1) {
+              blocked = rayHitsSomeSphereBefore(nextMirror.location, -direction, FAR);
+              if (!blocked) {
+                  //
+                  // Compute the reflected ray.
+                  //
+                  mirror = nextMirror;
+
+                  source = mirror.location;
+                  vec4 n = normalize(mirror.normal);
+                  direction = normalize(direction - 2.0 * dot(direction, n) * n);
+              }
+            }
           }
 
           // Find out the color of the surface hit...
@@ -991,7 +1016,7 @@
               color = computePhong(isect.location, isect.normal,
                                    source, lightPosition,
                                    isect.materialColor,
-                                   isect.materialGlossy, (mirror.yes == 1 && !blocked));
+                                   isect.materialGlossy);
           }
           return color;
       }
