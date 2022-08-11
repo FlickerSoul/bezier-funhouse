@@ -1,5 +1,7 @@
 # FunHouse 
 
+[Here](./bezier-funhouse.html)
+
 I did ray tracing by casting a ray tracing using subdivisions. 
 
 Suppose `p`, `c`, `q` are three control points on the Bézier curve. 
