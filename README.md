@@ -1,6 +1,6 @@
 # FunHouse 
 
-The project is ----- ATTENTION: THE PAGE IS VERY SLOW, I MEAN VERY SLOW -----> [Here](./bezier-funhouse.html) 
+The project is ----- ATTENTION: THE PAGE IS VERY SLOW, I MEAN VERY SLOW -----> [Here](https://flickersoul.github.io/bezier-funhouse/bezier-funhouse.html) 
 
 I did ray tracing by casting a ray and letting it bounce off on the mirror constructed using subdivisions and on the positioned balls/walls. 
 

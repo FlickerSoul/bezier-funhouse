@@ -1,10 +1,11 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>a Bézier funhouse</title>
 
-    <script id="glsl/trace-vs.c" type="x-shader/x-vertex">
+<head>
+  <meta charset="utf-8">
+  <title>a Bézier funhouse</title>
+
+  <script id="glsl/trace-vs.c" type="x-shader/x-vertex">
       //
       // trace-vs.c
       //
@@ -47,7 +48,7 @@
       }
     </script>
 
-    <script id="glsl/trace-fs.c" type="x-shader/x-vertex">
+  <script id="glsl/trace-fs.c" type="x-shader/x-vertex">
       //
       // trace-fs.c
       //
@@ -537,7 +538,7 @@
           // This is used to see the mirror's shadow.
           //
 
-          return rayHitsBezierBeforeRec5(R, d, cp0, cp1, cp2, distance);
+          return rayHitsBezierBeforeRec3(R, d, cp0, cp1, cp2, distance);
       }
           
       bool rayHitsMirrorBefore(vec4 R, vec4 d, float distance) {
@@ -1094,8 +1095,8 @@
       }
     </script>
 
-    
-    <script id="glsl/vs-varying-color.c" type="x-shader/x-vertex">
+
+  <script id="glsl/vs-varying-color.c" type="x-shader/x-vertex">
 //
 // vs-varying-color.c
 //
@@ -1123,7 +1124,7 @@ void main(void) {
   color = aVertexColor;
 }
     </script>
-    <script id="glsl/fs-color.c" type="x-shader/x-fragment">
+  <script id="glsl/fs-color.c" type="x-shader/x-fragment">
 //
 // fs-color.c
 //
@@ -1138,7 +1139,7 @@ void main(void) {
   gl_FragColor = color;
 }
     </script>
-    <script id="glsl/vs-uniform-material.c" type="x-shader/x-vertex">
+  <script id="glsl/vs-uniform-material.c" type="x-shader/x-vertex">
 //
 // vs-uniform-material.c
 //
@@ -1183,7 +1184,7 @@ void main() {
   place = gl_Position;
 }
     </script>
-    <script id="glsl/vs-varying-material.c" type="x-shader/x-vertex">
+  <script id="glsl/vs-varying-material.c" type="x-shader/x-vertex">
 //
 // vs-varying-material.c
 //
@@ -1229,7 +1230,7 @@ void main() {
 
 }
     </script>
-    <script id="glsl/fs-phong.c" type="x-shader/x-fragment">
+  <script id="glsl/fs-phong.c" type="x-shader/x-fragment">
 //
 // fs-phong.c
 //
@@ -1303,7 +1304,7 @@ void main() {
 }
     </script>
 
-    <script id="glsl/vs-uniform-color.c" type="x-shader/x-vertex">
+  <script id="glsl/vs-uniform-color.c" type="x-shader/x-vertex">
 //
 // vs-uniform-color.c
 //
@@ -1332,45 +1333,55 @@ void main(void) {
 }
     </script>
 
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.4.0/jspdf.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.4.0/jspdf.min.js"></script>
 
-    <script src="gl-matrix-min.js" defer></script>
-    <script src="gl.js" defer></script>
-    <script src="load-shaders.js" defer></script>
-    <script src="opengl.js" defer></script>
-    <script src="geometry-3d.js" defer></script>
-    <script src="funhouse.js" defer></script>
-    <script src="bezier-funhouse.js" defer></script>
-    <script type="text/javascript">
-      function chooseMirror(){
-          const status = document.getElementById("mirror-select").innerText;
-          if (status == "sphere -> bezier") {
-              document.getElementById("mirror-select").innerText = "bezier -> sphere";
-              sphericalMirror(false);
-          } else {
-              document.getElementById("mirror-select").innerText = "sphere -> bezier";
-              sphericalMirror(true);
-          }
+  <script src="gl-matrix-min.js" defer></script>
+  <script src="gl.js" defer></script>
+  <script src="load-shaders.js" defer></script>
+  <script src="opengl.js" defer></script>
+  <script src="geometry-3d.js" defer></script>
+  <script src="funhouse.js" defer></script>
+  <script src="bezier-funhouse.js" defer></script>
+  <script type="text/javascript">
+    function chooseMirror() {
+      const status = document.getElementById("mirror-select").innerText;
+      if (status == "sphere -> bezier") {
+        document.getElementById("mirror-select").innerText = "bezier -> sphere";
+        sphericalMirror(false);
+      } else {
+        document.getElementById("mirror-select").innerText = "sphere -> bezier";
+        sphericalMirror(true);
       }
-    </script>
-  </head>
+    }
+  </script>
+  <script>
+    function handleContextLost(event) {
+      document.getElementById("context_lost").style.display = "block";
+    }
+    document.getElementById("glcanvas").addEventListener("webglcontextlost", handleContextLost, false);
+  </script>
+</head>
 
-  <body>
-    <canvas id="glcanvas" width="1024" height="512"></canvas><br>
-    <font face="Verdana">
+<body>
+  <canvas id="glcanvas" width="1024" height="512"></canvas><br>
+  <font face="Verdana">
     <button onClick="chooseColor('adriatic')">adriatic</button>
     <button onClick="chooseColor('jade')">jade</button>
     <button onClick="chooseColor('travertine')">travertine</button>
     <button onClick="chooseColor('amethyst')">amethyst</button>
     <button onClick="chooseColor('fireball')">fireball</button>
     mirror:
-<!--    <button value="sphere -> bezier" id="mirror-select" onclick="chooseMirror();">sphere -> bezier</button>-->
+    <!--    <button value="sphere -> bezier" id="mirror-select" onclick="chooseMirror();">sphere -> bezier</button>-->
     <button value="sphere -> bezier" id="mirror-select" onclick="chooseMirror();">bezier -> sphere</button>
     <br>
     Place spheres or else position a <b>Bézier funhouse mirror</b>.<br>
     Use `ijklaz` to control the light position.<br>
     Use `x` to delete a sphere.<br>
     SHIFT-click to control the curve of the funhouse mirror.<br>
-    </font>
-  </body>
+    NOTE: the scene is very slow <br>
+    <p id="context_lost" style="display: none;"> WEBGL content lost. On MacOS, WebGL might lose context due to large
+      memory request.</p>
+  </font>
+</body>
+
 </html>
